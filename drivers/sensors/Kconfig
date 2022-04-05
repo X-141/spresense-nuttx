@@ -1042,4 +1042,9 @@ config HDC1008_DEBUG
 		Enables debug features for the HDC1008
 
 endif # SENSORS_HDC1008
+
+config SENSORS_MYSENSOR
+	bool "Example driver"
+	default n
+
 endif # SENSORS
