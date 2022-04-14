@@ -53,6 +53,9 @@
 #include <nuttx/sensors/ioctl.h>
 #include <nuttx/random.h>
 
+#include <arch/board/board.h>
+#include <arch/chip/pin.h>
+
 #if defined(CONFIG_I2C) && defined(CONFIG_SENSORS_VL53L1X)
 
 /****************************************************************************
@@ -283,8 +286,11 @@ static void vl53l1x_sensorinit(FAR struct vl53l1x_dev_s *priv)
 
   vl53l1x_startranging(priv);
 
+  _info("Starting ranging.\n");
+
   while (tmp == 0)
     {
+      // _info("%d.\n", tmp);
       vl53l1x_dataready(priv, &tmp);
     }
 
@@ -843,7 +849,7 @@ static uint16_t vl53l1x_getreg16(FAR struct vl53l1x_dev_s *priv,
 
   /* Register to read */
 
-  sninfo("Reg %02x % \n", reg_addr_aux[0], reg_addr_aux[1]);
+  sninfo("Reg %02x %\n", reg_addr_aux[0], reg_addr_aux[1]);
   ret = i2c_write(priv->i2c, &config, (uint8_t *)&reg_addr_aux, 2);
   if (ret < 0)
     {
@@ -1172,6 +1178,25 @@ int vl53l1x_register(FAR const char *devpath, FAR struct i2c_master_s *i2c)
   priv->i2c  = i2c;
   priv->addr = VL53L1X_ADDR;
   priv->freq = VL53L1X_FREQ;
+
+  board_gpio_write(2, 0);
+  board_gpio_write(2, 1);
+
+
+  // #define VL53L1X_I2C_SLAVE__DEVICE_ADDRESS 0x0001
+  // vl53l1x_putreg8(priv, VL53L1X_I2C_SLAVE__DEVICE_ADDRESS, VL53L1X_ADDR >> 1);
+  // priv->addr = VL53L1X_ADDR;
+
+  // uint8_t status = 0;
+
+  // #define VL53L1X_FIRMWARE__SYSTEM_STATUS 0x00E5
+  
+  // while(!status) {
+  //   _info("%d.\n", status);
+  //   status = vl53l1x_getreg8(priv, VL53L1X_FIRMWARE__SYSTEM_STATUS);
+  //   sleep(1);
+  // }
+
 
   vl53l1x_sensorinit(priv);
 

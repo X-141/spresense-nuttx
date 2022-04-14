@@ -328,9 +328,9 @@ ifeq ($(CONFIG_SENSORS_MYSENSOR),y)
   CSRCS += mySensor.c
 endif
 
-# ifeq ($(CONFIGSENSORS_MYVL53L1X),y)
-#   CSRCS += VL53L1X.c
-# endif
+ifeq ($(CONFIG_SENSORS_MYVL53L1X),y)
+  CSRCS += VL53L1X.c
+endif
 
 # Include sensor driver build support
 
