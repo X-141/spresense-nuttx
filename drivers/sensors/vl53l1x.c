@@ -44,6 +44,7 @@
 #include <fixedmath.h>
 #include <errno.h>
 #include <debug.h>
+#include <stdio.h>
 
 #include <nuttx/kmalloc.h>
 #include <nuttx/signal.h>
@@ -286,11 +287,11 @@ static void vl53l1x_sensorinit(FAR struct vl53l1x_dev_s *priv)
 
   vl53l1x_startranging(priv);
 
-  _info("Starting ranging.\n");
+  printf("Starting ranging.\n");
 
   while (tmp == 0)
     {
-      // _info("%d.\n", tmp);
+      printf("data ready?: %d.\n", tmp);
       vl53l1x_dataready(priv, &tmp);
     }
 
@@ -797,11 +798,15 @@ static uint8_t vl53l1x_getreg8(FAR struct vl53l1x_dev_s *priv,
   config.addrlen = 7;
 
   /* Write the register address */
+  uint8_t data[2];
+  data[0] = (uint8_t)(regaddr >> 8);
+  data[1] = (uint8_t)(regaddr & 0xFF);
 
-  ret = i2c_write(priv->i2c, &config, (uint8_t *)&regaddr, 2);
+  // ret = i2c_write(priv->i2c, &config, (uint8_t *)&regaddr, 2);
+  ret = i2c_write(priv->i2c, &config, (uint8_t *)&data, 2);
   if (ret < 0)
     {
-      snerr("ERROR: i2c_write failed: %d\n", ret);
+      printf("ERROR: i2c_write failed: %d\n", ret);
       return ret;
     }
 
@@ -810,7 +815,7 @@ static uint8_t vl53l1x_getreg8(FAR struct vl53l1x_dev_s *priv,
   ret = i2c_read(priv->i2c, &config, &regval, 1);
   if (ret < 0)
     {
-      snerr("ERROR: i2c_read failed: %d\n", ret);
+      printf("ERROR: i2c_read failed: %d\n", ret);
       return ret;
     }
 
@@ -959,7 +964,7 @@ static void vl53l1x_putreg8(FAR struct vl53l1x_dev_s *priv, uint16_t regaddr,
   ret = i2c_write(priv->i2c, &config, (uint8_t *) & data, 3);
   if (ret < 0)
     {
-      snerr("ERROR: i2c_write failed: %d\n", ret);
+      printf("ERROR: i2c_write failed: %d\n", ret);
       return;
     }
 
@@ -1159,6 +1164,43 @@ static void vl53l1x_ioctl(FAR struct file *filep, int cmd, uint16_t arg)
  *
  ****************************************************************************/
 
+#define D2 31
+
+/**
+* @brief       PowerOn the sensor
+* @return      void
+*/
+/* turns on the sensor */
+void VL53L1X_On(void)
+{
+  board_gpio_write(D2, 1);
+  usleep(10000);
+}
+
+/**
+* @brief       PowerOff the sensor
+* @return      void
+*/
+/* turns off the sensor */
+void VL53L1X_Off(void)
+{
+  board_gpio_write(D2, 0);
+  usleep(10000);
+}
+
+void VL53l1X_SetI2CAddress(FAR struct vl53l1x_dev_s* priv, uint8_t new_address) {
+  vl53l1x_putreg8(priv, VL53L1X_I2C_SLAVE__DEVICE_ADDRESS, new_address);
+  priv->addr = new_address;
+}
+
+uint8_t VL53L1X_BootState(FAR struct vl53l1x_dev_s* priv)
+{
+  //  VL53L1X_RdByte(Device,VL53L1X_FIRMWARE__SYSTEM_STATUS, &tmp);
+  uint8_t tmp = vl53l1x_getreg8(priv, VL53L1_SYSTEM_STATUS);
+  printf("%d\n", tmp);
+  return tmp;
+}
+
 int vl53l1x_register(FAR const char *devpath, FAR struct i2c_master_s *i2c)
 {
   FAR struct vl53l1x_dev_s *priv;
@@ -1175,35 +1217,34 @@ int vl53l1x_register(FAR const char *devpath, FAR struct i2c_master_s *i2c)
       return -ENOMEM;
     }
 
+  printf("HEY HEY HEY\n");
+
   priv->i2c  = i2c;
   priv->addr = VL53L1X_ADDR;
   priv->freq = VL53L1X_FREQ;
 
-  board_gpio_write(2, 0);
-  board_gpio_write(2, 1);
+  VL53L1X_Off();
+  VL53L1X_On();
 
+  printf("Writing new address 0x29\n");
+  VL53l1X_SetI2CAddress(priv, 0x29);
+  printf("Wrote new address 0x29\n");
 
-  // #define VL53L1X_I2C_SLAVE__DEVICE_ADDRESS 0x0001
-  // vl53l1x_putreg8(priv, VL53L1X_I2C_SLAVE__DEVICE_ADDRESS, VL53L1X_ADDR >> 1);
-  // priv->addr = VL53L1X_ADDR;
+  uint8_t boot_state = 0;
 
-  // uint8_t status = 0;
-
-  // #define VL53L1X_FIRMWARE__SYSTEM_STATUS 0x00E5
-  
-  // while(!status) {
-  //   _info("%d.\n", status);
-  //   status = vl53l1x_getreg8(priv, VL53L1X_FIRMWARE__SYSTEM_STATUS);
-  //   sleep(1);
-  // }
-
+  while(!boot_state) {
+    boot_state = VL53L1X_BootState(priv);
+    usleep(5000);
+  }
 
   vl53l1x_sensorinit(priv);
 
+  // return 0;
+  
   vl53l1x_getid(priv, &id);
   if (id != 0xeacc)
     {
-      snerr("ERROR: Failed sensor ID %04x\n", id);
+      printf("ERROR: Failed sensor ID %04x\n", id);
       kmm_free(priv);
       return 0;
     }
@@ -1211,12 +1252,12 @@ int vl53l1x_register(FAR const char *devpath, FAR struct i2c_master_s *i2c)
   register_driver(devpath, &g_vl53l1xfops, 0666, priv);
   if (ret < 0)
     {
-      snerr("ERROR: Failed to register driver: %d\n", ret);
+      printf("ERROR: Failed to register driver: %d\n", ret);
       kmm_free(priv);
       return 0;
     }
 
-  sninfo("vl53l1x driver loaded successfully!\n");
+  printf("vl53l1x driver loaded successfully!\n");
   return 1;
 }
 

@@ -50,6 +50,7 @@
 #define VL53L1X_I2C_PORTNO 1
 
 #define SOFT_RESET                  0x0000
+#define VL53L1X_I2C_SLAVE__DEVICE_ADDRESS 0x0001
 #define TIMEOUT_MACROP_LOOP_BOUND   0x0008
 #define RANGE_OFFSET_MM             0x001e
 #define INNER_OFFSET_MM             0x0020
