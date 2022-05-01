@@ -1047,8 +1047,5 @@ config SENSORS_MYSENSOR
 	bool "Example driver"
 	default n
 
-config SENSORS_MYVL53L1X
-	bool "My own implementation for VL53L1X i2c"
-	default n
 
 endif # SENSORS

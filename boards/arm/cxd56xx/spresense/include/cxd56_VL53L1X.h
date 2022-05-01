@@ -15,10 +15,6 @@ extern "C"
 #define EXTERN extern
 #endif
 
-#if defined(CONFIG_SENSORS_MYVL53L1X)
-int board_vl53l1x_initialize(FAR const char* devpath, int bus);
-#endif
-
 #if defined(CONFIG_I2C) && defined(CONFIG_SENSORS_VL53L1X)
 int board_vl53l1x_initialize(FAR const char* devpath, int bus);
 #endif
