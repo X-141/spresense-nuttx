@@ -107,7 +107,7 @@ extern "C"
  *
  ****************************************************************************/
 
-int vl53l1x_register(FAR const char *devpath, FAR struct i2c_master_s *i2c);
+int vl53l1x_register(FAR const char *devpath, FAR struct i2c_master_s *i2c, uint8_t address, uint8_t gpio_pin);
 
 #undef EXTERN
 #ifdef __cplusplus

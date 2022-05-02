@@ -11,25 +11,22 @@
 
 #include <nuttx/sensors/vl53l1x.h>
 
-int board_vl53l1x_initialize(FAR const char *devpath, int bus)
+int board_vl53l1x_initialize(FAR const char *devpath, int bus, uint8_t address, uint8_t gpio_pin)
 {
     int ret;
     FAR struct i2c_master_s *i2c;
 
-    printf("Initializing vl53l1x 2.\n");
-
     i2c = cxd56_i2cbus_initialize(bus);
     if (!i2c)
     {
-        printf("ERROR: Failed to initialize i2c %d.\n", bus);
+        snerr("ERROR: Failed to initialize i2c %d.\n", bus);
         return -ENODEV;
     }
-    printf("cxd56 bus initialized.\n");
     
-    ret = vl53l1x_register(devpath, i2c);
+    ret = vl53l1x_register(devpath, i2c, address, gpio_pin);
     if (ret < 0)
     {
-        printf("Error registering vl53l1x.\n");
+        snerr("Error registering vl53l1x.\n");
     }
 
     return ret;
