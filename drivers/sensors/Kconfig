@@ -1042,4 +1042,10 @@ config HDC1008_DEBUG
 		Enables debug features for the HDC1008
 
 endif # SENSORS_HDC1008
+
+config SENSORS_SAMPLE_SPI
+	bool "Example Sample SPI Driver"
+	default n
+	select SPI
+
 endif # SENSORS
