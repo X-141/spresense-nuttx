@@ -68,4 +68,21 @@ uint8_t board_sample_spi_uninitialize(struct sample_spi_handle *handle)
     return 0;
 }
 
+uint8_t sample_spi_transfer_byte(struct sample_spi_handle *handle, uint8_t data)
+{
+
+    if (!handle && handle->dev)
+    {
+        printf("Can't transfer on null handle or null device.\n");
+        return 1;
+    }
+
+    uint8_t received = 0;
+
+    SPI_SETBITS(handle->dev, 8);
+    SPI_EXCHANGE(handle->dev, (void *)(&data), (void *)(&received), 1);
+
+    return received;
+}
+
 #endif

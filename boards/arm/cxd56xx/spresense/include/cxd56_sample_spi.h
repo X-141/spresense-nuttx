@@ -36,29 +36,14 @@ struct sample_spi_handle {
     uint8_t bit_order;
     uint32_t clock;
     FAR struct spi_dev_s* dev;
-
-    // uint8_t tx_buffer_size;
-    // uint8_t rx_buffer_size;
-
-    // uint8_t tx_buffer[BUFFER_SPACE];
-    // uint8_t rx_buffer[BUFFER_SPACE];
 };
-
-// void clear_buffer_space(struct sample_spi_handle* handle);
-// void set_transfer_buffer(struct sample_spi_handle* handle, uint8_t* data, uint8_t size);
-
-uint16_t transfer_word(struct sample_spi_handle* handle, uint16_t data);
-
-// void perform_transfer(struct sample_spi_handle* handle);
-// uint8_t read_byte(struct sample_spi_handle* handle);
-// uint16_t read_word(struct sample_spi_handle* handle);
 
 struct sample_spi_handle* board_sample_spi_initialize(int port, uint8_t mode, uint8_t bit_order, uint32_t frequency);
 
 uint8_t board_sample_spi_uninitialize(struct sample_spi_handle* handle);
 
-// Consider that we aren't really implementing a character driver. Instead, just
-// an object that we can perform simple functions on.
+uint8_t sample_spi_transfer_byte(struct sample_spi_handle* handle, uint8_t data);
+
 #endif
 
 #undef EXTERN
