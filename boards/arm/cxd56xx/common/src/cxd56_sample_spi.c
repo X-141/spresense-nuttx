@@ -79,8 +79,22 @@ uint8_t sample_spi_transfer_byte(struct sample_spi_handle *handle, uint8_t data)
 
     uint8_t received = 0;
 
+    if (SPI_LOCK(handle->dev, true))
+    {
+        printf("Wasn't able to lock spi bus.\n");
+        return 2;
+    }
+
+    SPI_SETMODE(handle->dev, (enum spi_mode_e)(handle->spi_mode));
     SPI_SETBITS(handle->dev, 8);
+    SPI_SETFREQUENCY(handle->dev, handle->clock);
     SPI_EXCHANGE(handle->dev, (void *)(&data), (void *)(&received), 1);
+
+    if (SPI_LOCK(handle->dev, false))
+    {
+        printf("Wasn't able to unlock spi bus.\n");
+        return 3;
+    }
 
     return received;
 }
