@@ -108,8 +108,75 @@ uint8_t board_xpt2046_uninitialize(struct xpt2046_handle *handle)
     return 0;
 }
 
-void interrupt_handler(void) {
+void interrupt_handler(void)
+{
     irq_xpt2046_handle->isrWake = true;
+}
+
+uint8_t xpt2046_beginTransaction(struct xpt2046_handle *handle)
+{
+
+    if (!handle || !handle->dev)
+    {
+        printf("xpt2046 handle is either NULL or underlying SPI bus device has not been initialized.\n");
+        return 1;
+    }
+
+    if (SPI_LOCK(handle->dev, true))
+    {
+        printf("xpt2046 handle is unable to get a handle of the SPI bus.\n");
+        return 2;
+    }
+
+    SPI_SETFREQUENCY(handle->dev, handle->clk_freq);
+    SPI_SETMODE(handle->dev, (enum spi_mode_e)(handle->spi_mode));
+
+    return 0;
+}
+
+uint8_t xpt2046_endTransaction(struct xpt2046_handle *handle)
+{
+    if (!handle || !handle->dev)
+    {
+        printf("xpt2046 handle is either NULL or underlying SPI bus device has not been initialized.\n");
+        return 1;
+    }
+
+    if (SPI_LOCK(handle->dev, false))
+    {
+        printf("xpt2046 handle is unable to unlock handle of the SPI bus.\n");
+        return 2;
+    }
+
+    return 0;
+}
+
+uint8_t xpt2046_transfer_byte(struct xpt2046_handle *handle, uint8_t data, uint8_t *recv)
+{
+    if (!handle || !handle->dev)
+    {
+        printf("xpt2046 handle is either NULL or underlying SPI bus device has not been initialized.\n");
+        return 1;
+    }
+
+    SPI_SETBITS(handle->dev, 8);
+    SPI_EXCHANGE(handle->dev, (void *)(&data), (void *)(recv), 1);
+
+    return 0;
+}
+
+uint16_t xpt2046_transfer_word(struct xpt2046_handle *handle, uint16_t data, uint16_t *recv)
+{
+    if (!handle || !handle->dev)
+    {
+        printf("xpt2046 handle is either NULL or underlying SPI bus device has not been initialized.\n");
+        return 1;
+    }
+
+    SPI_SETBITS(handle->dev, 16);
+    SPI_EXCHANGE(handle->dev, (void *)(&data), (void *)(recv), 1);
+
+    return 0;
 }
 
 #endif
