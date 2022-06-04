@@ -1,6 +1,17 @@
 #ifndef __BOARDS_ARM_CXD56XX_SPRESENSE_INCLUDE_CXD56_XPT2046
 #define __BOARDS_ARM_CXD56XX_SPRESENSE_INCLUDE_CXD56_XPT2046
 
+/**
+ * @file cxd56_xpt2046.h
+ * @author Sean Phillips (seanphillips141@outlook.com)
+ * @brief Header information for XPT2046 driver.
+ * @version 0.1
+ * @date 2022-06-04
+ * 
+ * @Notes
+ * Adapted from https://github.com/PaulStoffregen/XPT2046_Touchscreen/blob/master/XPT2046_Touchscreen.h
+ */
+
 #include <nuttx/config.h>
 
 #if defined(CONFIG_XPT2046_TOUCH_SENSOR) && defined(CONFIG_SPI)
@@ -58,6 +69,10 @@ uint8_t xpt2046_irq_touched(struct xpt2046_handle *handle);
 uint8_t xpt2046_touched(struct xpt2046_handle *handle);
 
 void xpt2046_update(struct xpt2046_handle *handle);
+
+struct point xpt2046_get_point(struct xpt2046_handle *handle);
+
+void xpt2046_pptr_get_point(struct xpt2046_handle *handle, struct point *p);
 
 #endif
 
