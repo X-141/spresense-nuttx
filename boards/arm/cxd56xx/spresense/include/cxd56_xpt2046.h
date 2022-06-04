@@ -32,27 +32,31 @@ extern "C"
 #define LSBFIRST 0x0
 #define MSBFIRST 0x1
 
-struct point {
+struct point
+{
     int16_t x;
     int16_t y;
     int16_t z;
 };
 
-struct xpt2406_handle {
+struct xpt2046_handle
+{
     uint8_t spi_mode;
     uint8_t bit_order;
-    uint8_t isrWake;
+    volatile uint8_t isrWake;
     int16_t zraw;
-    int16_t xraw; 
+    int16_t xraw;
     int16_t yraw;
     uint32_t clock;
     uint32_t cs_pin;
     uint32_t tirq_pin;
     uint32_t msraw;
-    FAR struct spi_dev_s* dev;
+    FAR struct spi_dev_s *dev;
 };
 
-struct xpt2406_handle* board_xpt2046_initialize(int port, uint32_t cs_pin, uint8_t mode, uint8_t bit_order, uint32_t frequency);
+struct xpt2046_handle *board_xpt2046_initialize(int port, uint32_t cs_pin, uint32_t irq_pin, uint8_t mode, uint8_t bit_order, uint32_t frequency);
+
+uint8_t board_xpt2046_uninitialize(struct xpt2046_handle *handle);
 
 #endif
 
