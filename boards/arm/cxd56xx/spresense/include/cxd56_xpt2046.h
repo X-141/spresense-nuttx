@@ -45,6 +45,15 @@ struct xpt2046_handle *board_xpt2046_initialize(int port, uint32_t cs_pin, uint3
 
 uint8_t board_xpt2046_uninitialize(struct xpt2046_handle *handle);
 
+uint8_t xpt2046_beginTransaction(struct xpt2046_handle *handle);
+
+uint8_t xpt2046_endTransaction(struct xpt2046_handle *handle);
+
+uint8_t xpt2046_transfer_byte(struct xpt2046_handle *handle, uint8_t data, uint8_t* recv);
+
+uint16_t xpt2046_transfer_word(struct xpt2046_handle *handle, uint16_t data, uint16_t* recv);
+
+
 #endif
 
 #undef EXTERN
