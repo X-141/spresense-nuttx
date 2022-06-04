@@ -1,3 +1,18 @@
+/**
+ * @file cxd56_xpt2046.c
+ * @author Sean Phillips (seanphillips141@outlook.com)
+ * @brief Driver implementation for XPT2046 chip.
+ * @version 0.1
+ * @date 2022-06-04
+ * 
+ * 
+ * @Notes
+ * A portion of this driver is derived from https://github.com/PaulStoffregen/XPT2046_Touchscreen/blob/master/XPT2046_Touchscreen.cpp
+ * Mainly the functionality in what data is exchanged between the spresense board and the XPT2046 chip.
+ * 
+ * The only portions not originating from the aforementioned source is code that is specific to spresense/nuttx. 
+ */
+
 #include <nuttx/config.h>
 
 #if defined(CONFIG_XPT2046_TOUCH_SENSOR) && defined(CONFIG_SPI)
@@ -274,7 +289,7 @@ void xpt2046_update(struct xpt2046_handle *handle)
         data[3] = xpt2046_transfer_word(handle, 0x91 /* X */) >> 3;
     }
     else
-        data[0] = data[1] = data[2] = data[3] = 0;                 // Compiler warns these values may be used unset on early exit.
+        data[0] = data[1] = data[2] = data[3] = 0;              // Compiler warns these values may be used unset on early exit.
     data[4] = xpt2046_transfer_word(handle, 0xD0 /* Y */) >> 3; // Last Y touch power down
     data[5] = xpt2046_transfer_word(handle, 0) >> 3;
     board_gpio_write(handle->cs_pin, 1);
@@ -328,6 +343,21 @@ void xpt2046_update(struct xpt2046_handle *handle)
             handle->yraw = 4095 - y;
         }
     }
+}
+
+struct point xpt2046_get_point(struct xpt2046_handle *handle)
+{
+    struct point p;
+    xpt2046_pptr_get_point(handle, &p);
+    return p;
+}
+
+void xpt2046_pptr_get_point(struct xpt2046_handle *handle, struct point *p)
+{
+    xpt2046_update(handle);
+    p->x = handle->xraw;
+    p->y = handle->yraw;
+    p->z = handle->zraw;
 }
 
 #endif
