@@ -202,4 +202,9 @@ config RPR0521RS_PROXIMITY_INTERRUPT
 		In this case, SCU sequencer is not used.
 
 endif # SENSORS_RPR0521RS_SCU
+
 endif # SCU_SENSORS
+
+config XPT2046_TOUCH_SENSOR
+	bool "Allow usage of the XPT2046 touch controller"
+	default n
