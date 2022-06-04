@@ -31,8 +31,11 @@ uint64_t millis(void)
     return (((uint64_t)tp.tv_sec) * 1000 + tp.tv_nsec / 1000000);
 }
 
+void interrupt_handler(void);
+struct sample_spi_handle *irq_spi_handle;
+
 // Default port value should be 4. (i.e. CONFIG_CXD56_SPI4)
-struct sample_spi_handle *board_sample_spi_initialize(int port, uint32_t cs_pin, uint8_t mode, uint8_t bit_order, uint32_t frequency)
+struct sample_spi_handle *board_sample_spi_initialize(int port, uint32_t cs_pin, uint32_t irq_pin, uint8_t mode, uint8_t bit_order, uint32_t frequency)
 {
     FAR struct spi_dev_s *dev = NULL;
     dev = cxd56_spibus_initialize(port);
@@ -54,13 +57,34 @@ struct sample_spi_handle *board_sample_spi_initialize(int port, uint32_t cs_pin,
     handle->bit_order = bit_order;
     handle->clock = frequency;
     handle->cs_pin = cs_pin;
-    handle->tirq_pin = 255;
+    handle->tirq_pin = irq_pin;
+    handle->isrWake = 0;
     handle->dev = dev;
 
     // Go ahead and write to cs pin HIGH to turn it off.
     board_gpio_write(cs_pin, 1);
 
+    if (handle->tirq_pin != 255)
+    {
+        // Go ahead and attach the interrupt
+        int irq = board_gpio_intconfig(handle->tirq_pin, INT_FALLING_EDGE, true, (xcpt_t)interrupt_handler);
+        if (irq < 0)
+        {
+            printf("ERROR: Out of interrupt resources\n");
+            return handle;
+        }
+        usleep(1000);
+        board_gpio_int(handle->tirq_pin, true);
+        irq_spi_handle = handle;
+    }
+
     return handle;
+}
+
+void interrupt_handler(void)
+{
+    // printf("I've been pressed!");
+    irq_spi_handle->isrWake = true;
 }
 
 uint8_t board_sample_spi_uninitialize(struct sample_spi_handle *handle)
@@ -81,6 +105,14 @@ uint8_t board_sample_spi_uninitialize(struct sample_spi_handle *handle)
 
         handle->dev = NULL;
     }
+
+    int irq = board_gpio_int(handle->tirq_pin, false);
+    if (irq < 0)
+    {
+        printf("ERROR: Invalid pin [%ld]\n", handle->tirq_pin);
+        return 3;
+    }
+    board_gpio_intconfig(handle->tirq_pin, 0, false, NULL);
 
     handle->isrWake = 1;
     handle->zraw = 0;
@@ -137,6 +169,11 @@ uint16_t sample_spi_transfer_word(struct sample_spi_handle *handle, uint16_t dat
     SPI_EXCHANGE(handle->dev, (void *)(&in.hi), (void *)(&out.hi), 1);
 
     return out.val;
+}
+
+uint8_t tirq_touched(struct sample_spi_handle *handle)
+{
+    return handle->isrWake;
 }
 
 uint8_t touched(struct sample_spi_handle *handle)
@@ -204,7 +241,7 @@ void update(struct sample_spi_handle *handle)
         data[3] = sample_spi_transfer_word(handle, 0x91 /* X */) >> 3;
     }
     else
-        data[0] = data[1] = data[2] = data[3] = 0; // Compiler warns these values may be used unset on early exit.
+        data[0] = data[1] = data[2] = data[3] = 0;                 // Compiler warns these values may be used unset on early exit.
     data[4] = sample_spi_transfer_word(handle, 0xD0 /* Y */) >> 3; // Last Y touch power down
     data[5] = sample_spi_transfer_word(handle, 0) >> 3;
     board_gpio_write(handle->cs_pin, 1);
@@ -217,24 +254,24 @@ void update(struct sample_spi_handle *handle)
     if (z < Z_THRESHOLD)
     {
         handle->zraw = 0;
-        // if (z < Z_THRESHOLD_INT)
-        // {
-        //     if (255 != handle->tirq_pin)
-        //         handle->isrWake = 0;
-        // }
+        if (z < Z_THRESHOLD_INT)
+        {
+            if (handle->tirq_pin != 255)
+                handle->isrWake = 0;
+        }
         return;
     }
     handle->zraw = z;
 
     // Average pair with least distance between each measured x then y
-    //printf("    z1=%d,z2=%d  ", z1, z2);
-    //printf("p=%d,  %d,%d  %d,%d  %d,%d", handle->zraw,
+    // printf("    z1=%d,z2=%d  ", z1, z2);
+    // printf("p=%d,  %d,%d  %d,%d  %d,%d", handle->zraw,
     //    data[0], data[1], data[2], data[3], data[4], data[5]);
     int16_t x = besttwoavg(data[0], data[2], data[4]);
     int16_t y = besttwoavg(data[1], data[3], data[5]);
 
-    //printf("    %d,%d", x, y);
-    //printf("\n");
+    // printf("    %d,%d", x, y);
+    // printf("\n");
     if (z >= Z_THRESHOLD)
     {
         handle->msraw = now; // good read completed, set wait
@@ -285,7 +322,8 @@ uint8_t sample_spi_endTransaction(struct sample_spi_handle *handle)
     return 0;
 }
 
-struct point get_point(struct sample_spi_handle* handle) {
+struct point get_point(struct sample_spi_handle *handle)
+{
     update(handle);
     struct point p;
     p.x = handle->xraw;
